@@ -1,4 +1,4 @@
-package com.example.api.Service;
+package com.example.api.service;
 
 import com.example.api.domain.Coupon;
 import com.example.api.repository.CouponRepository;
