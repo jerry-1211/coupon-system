@@ -1,5 +1,6 @@
 package com.example.api.service;
 
+import com.example.api.repository.CouponCountRepository;
 import com.example.api.repository.CouponRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +21,12 @@ class ApplyServiceTest {
     @Autowired
     private CouponRepository couponRepository;
 
+    @Autowired
+    private CouponCountRepository couponCountRepository;
+
     @Test
     public void 한번만응모() {
-        applyService.apply(1L);
+        applyService.apply_v1(1L);
 
         long count = couponRepository.count();
 
@@ -31,7 +35,7 @@ class ApplyServiceTest {
 
 
     @Test
-    public void 여러명응모() throws InterruptedException {
+    public void 여러명응모_V1() throws InterruptedException {
         int threadCount = 1000;
         ExecutorService executorService = Executors.newFixedThreadPool(32);
         CountDownLatch latch = new CountDownLatch(threadCount);
@@ -40,7 +44,7 @@ class ApplyServiceTest {
             long userId = i;
             executorService.submit(() -> {
                 try {
-                    applyService.apply(userId);
+                    applyService.apply_v1(userId);
                 } finally {
                     latch.countDown();
                 }
@@ -55,5 +59,32 @@ class ApplyServiceTest {
          * Race Condition 때문에 100 제한을 걸어두었지만,초과해서 발행된다.
          * */
         assertThat(count).isNotEqualTo(100);
+    }
+
+    @Test
+    public void 여러명응모_V2() throws InterruptedException {
+        int threadCount = 1000;
+        ExecutorService executorService = Executors.newFixedThreadPool(32);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        for (int i = 0; i < threadCount; i++) {
+            long userId = i;
+            executorService.submit(() -> {
+                try {
+                    applyService.apply_v2(userId);
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+
+        long count = couponRepository.count();
+
+        /**
+         * Race Condition 때문에 100 제한을 걸어두었지만,초과해서 발행된다.
+         * */
+        assertThat(count).isEqualTo(100);
     }
 }
