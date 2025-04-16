@@ -62,7 +62,34 @@ class ApplyServiceTest {
     }
 
     @Test
-    public void 여러명응모_V2() throws InterruptedException {
+        public void 여러명응모_V2() throws InterruptedException {
+            int threadCount = 1000;
+            ExecutorService executorService = Executors.newFixedThreadPool(32);
+            CountDownLatch latch = new CountDownLatch(threadCount);
+
+            for (int i = 0; i < threadCount; i++) {
+                long userId = i;
+                executorService.submit(() -> {
+                    try {
+                        applyService.apply_v2(userId);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+
+            latch.await();
+
+            long count = couponRepository.count();
+
+            /**
+             * Race Condition 때문에 100 제한을 걸어두었지만,초과해서 발행된다.
+             * */
+            assertThat(count).isEqualTo(100);
+    }
+
+    @Test
+    public void 여러명응모_V3() throws InterruptedException {
         int threadCount = 1000;
         ExecutorService executorService = Executors.newFixedThreadPool(32);
         CountDownLatch latch = new CountDownLatch(threadCount);
@@ -71,7 +98,7 @@ class ApplyServiceTest {
             long userId = i;
             executorService.submit(() -> {
                 try {
-                    applyService.apply_v2(userId);
+                    applyService.apply_v3(userId);
                 } finally {
                     latch.countDown();
                 }
@@ -79,6 +106,8 @@ class ApplyServiceTest {
         }
 
         latch.await();
+
+        Thread.sleep(10000);
 
         long count = couponRepository.count();
 
